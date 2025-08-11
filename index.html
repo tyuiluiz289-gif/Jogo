@@ -691,3 +691,331 @@ renderAll();
 </body>
 </html>
 <link rel="manifest" href="manifest.json">
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <link rel="manifest" href="manifest.json">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crônicas de Cinza & Fogo — v0.2</title>
+  <meta name="theme-color" content="#0b0f15">
+  <style>
+    :root{
+      --bg:#0b0f15; --panel:#131a23; --muted:#7a8aa0; --text:#e7eef8; --acc:#6ee7ff; --ok:#7cf29a; --bad:#ff7a7a; --warn:#ffd479;
+    }
+    html,body{height:100%;}
+    body{margin:0;background:linear-gradient(180deg,#0b0f15,#0f1520);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;}
+    .wrap{max-width:980px;margin:0 auto;padding:20px;display:grid;gap:16px;grid-template-columns: 280px 1fr;}
+    header{grid-column:1/-1;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    h1{font-size:20px;margin:0}
+    .pill{padding:4px 10px;border-radius:999px;background:#0f1b2a;border:1px solid #1e2b3a;color:#a8c2dc;font-size:12px}
+
+    .panel{background:var(--panel);border:1px solid #1f2a39;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .left{padding:14px;display:flex;flex-direction:column;gap:12px}
+    .right{display:flex;flex-direction:column;gap:12px}
+
+    .char{display:grid;grid-template-columns:48px 1fr;gap:10px;align-items:center;padding:8px;border-radius:12px;border:1px solid #243246;background:#0f1622}
+    .pfp{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:700}
+    .pfp span{filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))}
+    .pfp.kael{background: radial-gradient(circle at 30% 30%, #3b82f6, #1e293b)}
+    .pfp.selene{background: radial-gradient(circle at 30% 30%, #22c55e, #064e3b)}
+    .pfp.darian{background: radial-gradient(circle at 30% 30%, #a855f7, #3b0764)}
+    .pfp.lyra{background: radial-gradient(circle at 30% 30%, #f472b6, #3f0a2b)}
+    .pfp.borin{background: radial-gradient(circle at 30% 30%, #f59e0b, #3a1d04)}
+    .pfp.elyne{background: radial-gradient(circle at 30% 30%, #60a5fa, #111827)}
+
+    .grid-attrs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}
+    .attr{background:#0b1220;border:1px solid #223046;border-radius:10px;padding:6px;text-align:center;font-size:12px}
+    .attr strong{display:block;font-size:14px}
+
+    .select-actor{display:flex;gap:6px;flex-wrap:wrap}
+    .select-actor button{flex:1 1 auto}
+
+    .scene{padding:14px}
+    .scene h2{margin:0 0 8px;font-size:18px}
+    .story{white-space:pre-wrap;background:#0b1220;border:1px solid #223046;border-radius:12px;padding:12px;min-height:180px}
+
+    .choices{display:grid;grid-template-columns:1fr;gap:8px}
+    .choices button{padding:10px 12px;border-radius:12px;border:1px solid #26435a;background:#102233;color:var(--text);cursor:pointer}
+    .choices button:hover{border-color:#2f6f8e}
+
+    .hud{display:flex;gap:8px;flex-wrap:wrap}
+    .tag{background:#0b1220;border:1px solid #223046;border-radius:999px;padding:6px 10px;font-size:12px}
+
+    .log{background:#0b1220;border:1px solid #223046;border-radius:12px;padding:10px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;max-height:200px;overflow:auto}
+    .meta{display:flex;justify-content:space-between;align-items:center}
+    .meta small{color:var(--muted)}
+
+    .footer{grid-column:1/-1;color:#8ea7c0;text-align:center;padding:10px 0 20px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{padding:8px 10px;border-radius:10px;border:1px solid #284156;background:#102233;color:var(--text);cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .inv{margin-top:6px;font-size:12px;color:#a7c0da}
+
+    /* Retratos */
+    .portraits{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0}
+    .portrait{background:#0b1220;border:1px solid #223046;border-radius:12px;padding:6px;width:110px;text-align:center}
+    .portrait img{width:100%;height:100px;object-fit:cover;border-radius:8px}
+    .portrait figcaption{font-size:12px;color:#a8c2dc;margin-top:4px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span class="pill">RPG de Texto</span>
+      <h1>Crônicas de Cinza & Fogo</h1>
+      <span class="pill">v0.2 • Capítulos 1–2</span>
+      <span class="pill">Dados + Atributos + Relações</span>
+    </header>
+
+    <aside class="panel left">
+      <div class="meta"><strong>Protagonistas</strong> <small id="xpTotal">XP Total: 0</small></div>
+      <div id="chars"></div>
+
+      <hr style="border-color:#1f2a39;border-width:0 0 1px 0" />
+
+      <div class="select-actor">
+        <button class="btn" id="useKael">Atuar como Kael</button>
+        <button class="btn" id="useSelene">Atuar como Selene</button>
+        <button class="btn" id="useDarian">Atuar como Darian</button>
+      </div>
+
+      <div style="margin-top:8px" class="hud">
+        <span class="tag" id="activeTag">Ator ativo: Kael</span>
+        <span class="tag" id="chapterTag">Capítulo 1</span>
+        <span class="tag" id="diffTag">DC: —</span>
+      </div>
+
+      <div style="margin-top:8px">
+        <strong>Relações</strong>
+        <div class="row" style="margin-top:6px">
+          <div class="char">
+            <div class="pfp lyra"><span>Lyra</span></div>
+            <div>
+              <div><strong>Lyra</strong> <small class="pill">Empregada (cabelo rosa)</small></div>
+              <div>Relação: <span id="relLyra">0</span></div>
+            </div>
+          </div>
+          <div class="char">
+            <div class="pfp borin"><span>B</span></div>
+            <div>
+              <div><strong>Borin</strong> <small class="pill">Anão ferreiro</small></div>
+              <div>Relação: <span id="relBorin">0</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="char">
+          <div class="pfp elyne"><span>E</span></div>
+          <div>
+            <div><strong>Elyne</strong> <small class="pill">Irmã do Kael</small></div>
+            <div>Relação: <span id="relElyne">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:8px">
+        <strong>Registro</strong>
+        <div class="log" id="log"></div>
+      </div>
+    </aside>
+
+    <main class="panel right">
+      <section class="scene">
+        <h2 id="sceneTitle">Prólogo — A Promessa na Chuva</h2>
+        <div id="portraits" class="portraits"></div>
+        <div id="story" class="story"></div>
+        <div id="inventory" class="inv"></div>
+      </section>
+      <section class="scene">
+        <div class="choices" id="choices"></div>
+      </section>
+      <section class="scene">
+        <div class="row">
+          <button class="btn" id="saveBtn">Salvar</button>
+          <button class="btn" id="resetBtn">Reiniciar</button>
+        </div>
+      </section>
+    </main>
+
+    <div class="footer">PWA offline • Save local • Sem imagens externas</div>
+  </div>
+
+<script>
+// ======== Núcleo de Jogo ========
+const RNG = {
+  d20: ()=> Math.floor(Math.random()*20)+1,
+  d6: ()=> Math.floor(Math.random()*6)+1,
+  d8: ()=> Math.floor(Math.random()*8)+1,
+};
+
+// ======== Retratos (usando /imagens) ========
+const IMG = {
+  kael: 'imagens/kael.png',
+  selene: 'imagens/selene.png',
+  darian: 'imagens/darian.png',
+  lyra: 'imagens/lyra.jpg',
+  borin: 'imagens/borin.jpg',
+  elyne: 'imagens/elyne.png',
+  boss: 'icon-192.png' // placeholder
+};
+function label(id){
+  return {kael:'Kael', selene:'Selene', darian:'Darian', lyra:'Lyra', borin:'Borin', elyne:'Elyne', boss:'Sombra de Ferro'}[id] || id;
+}
+function setPortraits(ids){
+  const box = document.getElementById('portraits');
+  if(!box) return;
+  if(!ids || !ids.length){ box.innerHTML=''; return; }
+  box.innerHTML = ids.map(id => `
+    <figure class="portrait">
+      <img src="${IMG[id]||'icon-192.png'}" alt="${label(id)}">
+      <figcaption>${label(id)}</figcaption>
+    </figure>
+  `).join('');
+}
+
+const DB = {
+  xpTotal: 0,
+  actors: {
+    kael: { id:'kael', nome:'Kael', cls:'kael', hp:20, maxHp:20, lvl:1,
+      FOR:7, DES:6, CON:6, INT:4, CAR:5, inventario:[] },
+    selene: { id:'selene', nome:'Selene', cls:'selene', hp:16, maxHp:16, lvl:1,
+      FOR:4, DES:8, CON:5, INT:6, CAR:5, inventario:[] },
+    darian: { id:'darian', nome:'Darian', cls:'darian', hp:14, maxHp:14, lvl:1,
+      FOR:3, DES:5, CON:5, INT:9, CAR:4, inventario:[] },
+  },
+  rel: { lyra:0, borin:0, elyne:0 },
+  meta: { chapter:1, active:'kael' },
+  flags: { forged:false, miniboss:false, dropCore:false }
+}
+
+// Persistência
+function save(){ localStorage.setItem('rpg_ccf_v02', JSON.stringify(DB)); toast('Jogo salvo.'); }
+function load(){ const raw = localStorage.getItem('rpg_ccf_v02'); if(raw){ Object.assign(DB, JSON.parse(raw)); renderAll(); toast('Save carregado.'); } }
+function reset(){ localStorage.removeItem('rpg_ccf_v02'); location.reload(); }
+
+// UI helpers
+function el(id){ return document.getElementById(id); }
+function log(msg){ const box = el('log'); const time = new Date().toLocaleTimeString(); box.innerHTML = `[${time}] ${msg}<br>` + box.innerHTML; }
+function toast(msg){ log(msg); }
+
+// Render personagens + inventário
+function invList(a){
+  if(!a.inventario || a.inventario.length===0) return "Inventário: —";
+  return "Inventário: " + a.inventario.map(x=>x.nome).join(", ");
+}
+function renderChars(){
+  const wrap = el('chars');
+  wrap.innerHTML = '';
+  Object.values(DB.actors).forEach(a=>{
+    const node = document.createElement('div');
+    node.className = 'char';
+    node.innerHTML = `
+      <div class="pfp ${a.cls}"><span>${a.nome[0]}</span></div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>${a.nome}</strong>
+          <small class="pill">HP ${a.hp}/${a.maxHp} • Nível ${a.lvl}</small>
+        </div>
+        <div class="grid-attrs">
+          <div class="attr"><strong>FOR</strong>${a.FOR}</div>
+          <div class="attr"><strong>DES</strong>${a.DES}</div>
+          <div class="attr"><strong>CON</strong>${a.CON}</div>
+          <div class="attr"><strong>INT</strong>${a.INT}</div>
+          <div class="attr"><strong>CAR</strong>${a.CAR}</div>
+        </div>
+      </div>`;
+    wrap.appendChild(node);
+  });
+  el('activeTag').textContent = 'Ator ativo: '+DB.actors[DB.meta.active].nome;
+  el('xpTotal').textContent = 'XP Total: '+DB.xpTotal;
+  el('relLyra').textContent = DB.rel.lyra;
+  el('relBorin').textContent = DB.rel.borin;
+  el('relElyne').textContent = DB.rel.elyne;
+  el('chapterTag').textContent = 'Capítulo '+DB.meta.chapter;
+  const a = DB.actors[DB.meta.active];
+  el('inventory').textContent = invList(a);
+}
+function setActive(id){ DB.meta.active = id; renderChars(); }
+
+document.getElementById('useKael').onclick = ()=> setActive('kael');
+document.getElementById('useSelene').onclick = ()=> setActive('selene');
+document.getElementById('useDarian').onclick = ()=> setActive('darian');
+document.getElementById('saveBtn').onclick = save;
+document.getElementById('resetBtn').onclick = reset;
+
+// Rolagens & testes
+function teste(atr, DC, kind='fisico'){
+  const actor = DB.actors[DB.meta.active];
+  const base = actor[atr] || 0;
+  const roll = RNG.d20();
+  const total = base + roll;
+  el('diffTag').textContent = 'DC: '+DC;
+  log(`${actor.nome} testa ${atr} (${base}) + d20 (${roll}) = ${total} vs DC ${DC}`);
+  return { ok: total >= DC, total, roll, base, actor };
+}
+function dano(tipo='fisico', actor){
+  if(tipo==='magico') return Math.floor((actor.INT/2)) + RNG.d8();
+  return Math.floor((actor.FOR/2)) + RNG.d6();
+}
+
+// ======== CENAS ========
+const Scenes = { /* (teu objeto Scenes completo permanece igual) */
+  </script>
+<script>
+// ===== Faces por cena =====
+const SceneFaces = {
+  prologo: ['kael','selene','darian'],
+  encontroLyra: ['kael','selene','darian','lyra'],
+  lyraBrief: ['kael','lyra'],
+  lyraFria: ['kael','lyra'],
+  guilda: ['kael','selene','darian'],
+  cartaElyne: ['kael','elyne'],
+  cartaElyne2: ['kael','elyne'],
+  minaEntrada: ['kael','selene','darian'],
+  emboscadaEvita: ['kael','selene','darian'],
+  emboscadaLobo: ['kael','selene','darian'],
+  combateLobo: ['kael','selene','darian'],
+  posCombate: ['kael','selene','darian','borin'],
+  borinIrritado: ['kael','selene','darian','borin'],
+  borinLivre: ['kael','borin'],
+  retornoVila: ['kael','lyra','borin'],
+  dialogoLyra: ['kael','lyra'],
+  dialogoBorin: ['kael','borin'],
+  fimCap1: ['kael','lyra','borin'],
+  amanhecerLyra: ['kael','lyra'],
+  romanceLyra: ['kael','lyra'],
+  romanceFail: ['kael','lyra'],
+  forjaBorin: ['kael','selene','darian','borin'],
+  forjaEspada: ['kael','borin'],
+  forjaArco: ['selene','borin'],
+  forjaAnel: ['darian','borin'],
+  estradaEvento: ['kael','selene','darian'],
+  ladroes: ['kael','selene','darian'],
+  viajante: ['kael','selene','darian'],
+  achado: ['kael','selene','darian'],
+  minaProfundaEntrada: ['kael','selene','darian'],
+  miniboss: ['kael','selene','darian','boss'],
+  posMiniboss: ['kael','selene','darian'],
+  fechamentoC2: ['kael','lyra','borin'],
+  checkRomance: ['kael','lyra'],
+  romanceBloqueado: ['kael','lyra']
+};
+  // Máquina de cena + roteador de evento aleatório
+let current = 'prologo';
+function goto(key){
+  if(key==='__EVT__'){
+    if(DB.flags.rand===0) key='ladroes';
+    else if(DB.flags.rand===1) key='viajante';
+    else key='achado';
+  }
+  current = key;
+  const sc = Scenes[key];
+  document.getElementById('sceneTitle').textContent = sc.title;
+  document.getElementById('story').textContent = sc.text;
+  if(sc.onEnter) sc.onEnter();
+
+  setPortraits(SceneFaces[key] || []); // <- retratos por cena
+
+  renderChoices();
+  renderChars();
+}

@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Crônicas de Cinza & Fogo — v0.2</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#0b0f15">
+  <style>
+    :root{
+      --bg:#0b0f15; --panel:#131a23; --muted:#7a8aa0; --text:#e7eef8; --acc:#6ee7ff; --ok:#7cf29a; --bad:#ff7a7a; --warn:#ffd479;
+    }
+    html,body{height:100%;}
+    body{margin:0;background:linear-gradient(180deg,#0b0f15,#0f1520);color:var(--text);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;}
+    .wrap{max-width:980px;margin:0 auto;padding:20px;display:grid;gap:16px;grid-template-columns: 280px 1fr;}
+    header{grid-column:1/-1;display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+    h1{font-size:20px;margin:0}
+    .pill{padding:4px 10px;border-radius:999px;background:#0f1b2a;border:1px solid #1e2b3a;color:#a8c2dc;font-size:12px}
+
+    .panel{background:var(--panel);border:1px solid #1f2a39;border-radius:16px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+    .left{padding:14px;display:flex;flex-direction:column;gap:12px}
+    .right{display:flex;flex-direction:column;gap:12px}
+
+    .char{display:grid;grid-template-columns:48px 1fr;gap:10px;align-items:center;padding:8px;border-radius:12px;border:1px solid #243246;background:#0f1622}
+    .pfp{width:48px;height:48px;border-radius:50%;display:grid;place-items:center;font-weight:700}
+    .pfp span{filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))}
+    .pfp.kael{background: radial-gradient(circle at 30% 30%, #3b82f6, #1e293b)}
+    .pfp.selene{background: radial-gradient(circle at 30% 30%, #22c55e, #064e3b)}
+    .pfp.darian{background: radial-gradient(circle at 30% 30%, #a855f7, #3b0764)}
+    .pfp.lyra{background: radial-gradient(circle at 30% 30%, #f472b6, #3f0a2b)}
+    .pfp.borin{background: radial-gradient(circle at 30% 30%, #f59e0b, #3a1d04)}
+    .pfp.elyne{background: radial-gradient(circle at 30% 30%, #60a5fa, #111827)}
+
+    .grid-attrs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:6px}
+    .attr{background:#0b1220;border:1px solid #223046;border-radius:10px;padding:6px;text-align:center;font-size:12px}
+    .attr strong{display:block;font-size:14px}
+
+    .select-actor{display:flex;gap:6px;flex-wrap:wrap}
+    .select-actor button{flex:1 1 auto}
+
+    .scene{padding:14px}
+    .scene h2{margin:0 0 8px;font-size:18px}
+    .story{white-space:pre-wrap;background:#0b1220;border:1px solid #223046;border-radius:12px;padding:12px;min-height:180px}
+
+    .choices{display:grid;grid-template-columns:1fr;gap:8px}
+    .choices button{padding:10px 12px;border-radius:12px;border:1px solid #26435a;background:#102233;color:var(--text);cursor:pointer}
+    .choices button:hover{border-color:#2f6f8e}
+
+    .hud{display:flex;gap:8px;flex-wrap:wrap}
+    .tag{background:#0b1220;border:1px solid #223046;border-radius:999px;padding:6px 10px;font-size:12px}
+
+    .log{background:#0b1220;border:1px solid #223046;border-radius:12px;padding:10px;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;max-height:200px;overflow:auto}
+    .meta{display:flex;justify-content:space-between;align-items:center}
+    .meta small{color:var(--muted)}
+
+    .footer{grid-column:1/-1;color:#8ea7c0;text-align:center;padding:10px 0 20px}
+    .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+    .btn{padding:8px 10px;border-radius:10px;border:1px solid #284156;background:#102233;color:var(--text);cursor:pointer}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .inv{margin-top:6px;font-size:12px;color:#a7c0da}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <span class="pill">RPG de Texto</span>
+      <h1>Crônicas de Cinza & Fogo</h1>
+      <span class="pill">v0.2 • Capítulos 1–2</span>
+      <span class="pill">Dados + Atributos + Relações</span>
+    </header>
+
+    <aside class="panel left">
+      <div class="meta"><strong>Protagonistas</strong> <small id="xpTotal">XP Total: 0</small></div>
+      <div id="chars"></div>
+
+      <hr style="border-color:#1f2a39;border-width:0 0 1px 0" />
+
+      <div class="select-actor">
+        <button class="btn" id="useKael">Atuar como Kael</button>
+        <button class="btn" id="useSelene">Atuar como Selene</button>
+        <button class="btn" id="useDarian">Atuar como Darian</button>
+      </div>
+
+      <div style="margin-top:8px" class="hud">
+        <span class="tag" id="activeTag">Ator ativo: Kael</span>
+        <span class="tag" id="chapterTag">Capítulo 1</span>
+        <span class="tag" id="diffTag">DC: —</span>
+      </div>
+
+      <div style="margin-top:8px">
+        <strong>Relações</strong>
+        <div class="row" style="margin-top:6px">
+          <div class="char">
+            <div class="pfp lyra"><span>Lyra</span></div>
+            <div>
+              <div><strong>Lyra</strong> <small class="pill">Empregada (cabelo rosa)</small></div>
+              <div>Relação: <span id="relLyra">0</span></div>
+            </div>
+          </div>
+          <div class="char">
+            <div class="pfp borin"><span>B</span></div>
+            <div>
+              <div><strong>Borin</strong> <small class="pill">Anão ferreiro</small></div>
+              <div>Relação: <span id="relBorin">0</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="char">
+          <div class="pfp elyne"><span>E</span></div>
+          <div>
+            <div><strong>Elyne</strong> <small class="pill">Irmã do Kael</small></div>
+            <div>Relação: <span id="relElyne">0</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:8px">
+        <strong>Registro</strong>
+        <div class="log" id="log"></div>
+      </div>
+    </aside>
+
+    <main class="panel right">
+      <section class="scene">
+        <h2 id="sceneTitle">Prólogo — A Promessa na Chuva</h2>
+        <div id="story" class="story"></div>
+        <div id="inventory" class="inv"></div>
+      </section>
+      <section class="scene">
+        <div class="choices" id="choices"></div>
+      </section>
+      <section class="scene">
+        <div class="row">
+          <button class="btn" id="saveBtn">Salvar</button>
+          <button class="btn" id="resetBtn">Reiniciar</button>
+        </div>
+      </section>
+    </main>
+
+    <div class="footer">PWA offline • Save local • Sem imagens externas</div>
+  </div>
+
+<script>
+// ======== Núcleo de Jogo ========
+const RNG = {
+  d20: ()=> Math.floor(Math.random()*20)+1,
+  d6: ()=> Math.floor(Math.random()*6)+1,
+  d8: ()=> Math.floor(Math.random()*8)+1,
+}
+
+const DB = {
+  xpTotal: 0,
+  actors: {
+    kael: { id:'kael', nome:'Kael', cls:'kael', hp:20, maxHp:20, lvl:1,
+      FOR:7, DES:6, CON:6, INT:4, CAR:5, inventario:[] },
+    selene: { id:'selene', nome:'Selene', cls:'selene', hp:16, maxHp:16, lvl:1,
+      FOR:4, DES:8, CON:5, INT:6, CAR:5, inventario:[] },
+    darian: { id:'darian', nome:'Darian', cls:'darian', hp:14, maxHp:14, lvl:1,
+      FOR:3, DES:5, CON:5, INT:9, CAR:4, inventario:[] },
+  },
+  rel: { lyra:0, borin:0, elyne:0 },
+  meta: { chapter:1, active:'kael' },
+  flags: { forged:false, miniboss:false, dropCore:false },
+}
+
+// Persistência
+function save(){ localStorage.setItem('rpg_ccf_v02', JSON.stringify(DB)); toast('Jogo salvo.'); }
+function load(){ const raw = localStorage.getItem('rpg_ccf_v02'); if(raw){ Object.assign(DB, JSON.parse(raw)); renderAll(); toast('Save carregado.'); } }
+function reset(){ localStorage.removeItem('rpg_ccf_v02'); location.reload(); }
+
+// UI helpers
+function el(id){ return document.getElementById(id); }
+function log(msg){ const box = el('log'); const time = new Date().toLocaleTimeString(); box.innerHTML = `[${time}] ${msg}<br>` + box.innerHTML; }
+function toast(msg){ log(msg); }
+
+// Render personagens + inventário
+function invList(a){
+  if(!a.inventario || a.inventario.length===0) return "Inventário: —";
+  return "Inventário: " + a.inventario.map(x=>x.nome).join(", ");
+}
+function renderChars(){
+  const wrap = el('chars');
+  wrap.innerHTML = '';
+  Object.values(DB.actors).forEach(a=>{
+    const node = document.createElement('div');
+    node.className = 'char';
+    node.innerHTML = `
+      <div class="pfp ${a.cls}"><span>${a.nome[0]}</span></div>
+      <div>
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <strong>${a.nome}</strong>
+          <small class="pill">HP ${a.hp}/${a.maxHp} • Nível ${a.lvl}</small>
+        </div>
+        <div class="grid-attrs">
+          <div class="attr"><strong>FOR</strong>${a.FOR}</div>
+          <div class="attr"><strong>DES</strong>${a.DES}</div>
+          <div class="attr"><strong>CON</strong>${a.CON}</div>
+          <div class="attr"><strong>INT</strong>${a.INT}</div>
+          <div class="attr"><strong>CAR</strong>${a.CAR}</div>
+        </div>
+      </div>`;
+    wrap.appendChild(node);
+  });
+  el('activeTag').textContent = 'Ator ativo: '+DB.actors[DB.meta.active].nome;
+  el('xpTotal').textContent = 'XP Total: '+DB.xpTotal;
+  el('relLyra').textContent = DB.rel.lyra;
+  el('relBorin').textContent = DB.rel.borin;
+  el('relElyne').textContent = DB.rel.elyne;
+  el('chapterTag').textContent = 'Capítulo '+DB.meta.chapter;
+  const a = DB.actors[DB.meta.active];
+  el('inventory').textContent = invList(a);
+}
+function setActive(id){ DB.meta.active = id; renderChars(); }
+
+document.getElementById('useKael').onclick = ()=> setActive('kael');
+document.getElementById('useSelene').onclick = ()=> setActive('selene');
+document.getElementById('useDarian').onclick = ()=> setActive('darian');
+document.getElementById('saveBtn').onclick = save;
+document.getElementById('resetBtn').onclick = reset;
+
+// Rolagens & testes
+function teste(atr, DC, kind='fisico'){
+  const actor = DB.actors[DB.meta.active];
+  const base = actor[atr] || 0;
+  const roll = RNG.d20();
+  const total = base + roll;
+  el('diffTag').textContent = 'DC: '+DC;
+  log(`${actor.nome} testa ${atr} (${base}) + d20 (${roll}) = ${total} vs DC ${DC}`);
+  return { ok: total >= DC, total, roll, base, actor };
+}
+function dano(tipo='fisico', actor){
+  if(tipo==='magico') return Math.floor((actor.INT/2)) + RNG.d8();
+  return Math.floor((actor.FOR/2)) + RNG.d6();
+}
+
+// ======== CENAS ========
+const Scenes = {
+  // Capítulo 1 (igual base)
+  prologo: {
+    title: 'Prólogo — A Promessa na Chuva',
+    text: `Noite chuvosa. O cheiro de ferro queimado no ar. Gritos ao longe. 
+Kael corre entre ruas em chamas — a torre ruindo atrás dele. O rugido de um orc ecoa. Ele jura: nunca mais será fraco.
+Anos depois, diante da Guilda dos Aventureiros, ele encontra Selene e Darian.`,
+    choices:[
+      { label:'Entrar na Guilda', go:'guilda' },
+      { label:'Varrer os arredores (percepção)', check:{atr:'DES', DC:13}, pass:{ go:'encontroLyra' }, fail:{ go:'guilda' } },
+    ]
+  },
+  encontroLyra: {
+    title:'Encontro com Lyra',
+    text:`Na lateral do prédio, uma jovem de avental e cabelo rosa observa nervosa. 
+"Ei... vocês são aventureiros? Precisamos de ajuda. O ferreiro sumiu e minha patroa está apavorada."`,
+    onEnter: ()=>{ DB.rel.lyra += 1; },
+    choices:[
+      { label:'Ouvir Lyra (CAR 12)', check:{atr:'CAR', DC:12}, pass:{ go:'lyraBrief' }, fail:{ go:'lyraFria' } },
+      { label:'Ignorar e entrar na Guilda', go:'guilda' },
+    ]
+  },
+  lyraFria: {
+    title:'Desconfiança',
+    text:`Lyra cruza os braços, magoada. "Esquece. Vou achar outra ajuda."`,
+    onEnter: ()=>{ DB.rel.lyra -= 1; },
+    choices:[
+      { label:'Chamar de volta (CAR 14)', check:{atr:'CAR', DC:14}, pass:{ go:'lyraBrief' }, fail:{ go:'guilda' } },
+    ]
+  },
+  lyraBrief: {
+    title:'Pedido de Ajuda',
+    text:`Lyra respira fundo. "Borin, o anão ferreiro, não voltou da mina velha. A guarda não liga. 
+Se vocês trouxerem ele, posso convencer minha senhora a patrocinar o grupo."`,
+    onEnter: ()=>{ DB.rel.lyra += 1; },
+    choices:[
+      { label:'Aceitar a missão da Mina', go:'minaEntrada' },
+      { label:'Pedir adiantamento (CAR 15)', check:{atr:'CAR', DC:15}, pass:{ go:'adiantamentoOk' }, fail:{ go:'adiantamentoNo' } },
+    ]
+  },
+  adiantamentoOk: {
+    title:'Bolsa de Moedas',
+    text:'Lyra entrega uma pequena bolsa. "Não me deixa na mão."',
+    onEnter: ()=>{ DB.rel.lyra += 1; },
+    choices:[{ label:'Seguir para a Mina', go:'minaEntrada' }]
+  },
+  adiantamentoNo: {
+    title:'Sem Confiança',
+    text:'"Sem prova, sem moedas", diz Lyra seca.',
+    choices:[{ label:'Seguir para a Mina', go:'minaEntrada' }]
+  },
+  guilda: {
+    title:'Guilda dos Aventureiros',
+    text:`A recepcionista anota os nomes. "Trabalho? Há relatos de lobos-escama perto da mina." 
+O quadro de avisos menciona Borin, ferreiro ausente. Coincidência?`,
+    choices:[
+      { label:'Pegar missão da Mina', go:'minaEntrada' },
+      { label:'Conversar com Elyne (irmã de Kael) por carta', go:'cartaElyne' },
+    ]
+  },
+  cartaElyne: {
+    title:'Carta para Elyne',
+    text:`Kael escreve: "Prometo voltar inteiro." A resposta tarda, mas acalma o peito.`,
+    onEnter: ()=>{ DB.rel.elyne += 1; },
+    choices:[{ label:'Partir para a Mina', go:'minaEntrada' }]
+  },
+  minaEntrada: {
+    title:'Entrada da Mina Velha',
+    text:`O vento frio raspa a pele. Pegadas pequenas e pesadas levam para dentro. 
+Um uivo metálico vibra nas paredes…`,
+    choices:[
+      { label:'Avançar em silêncio (DES 13)', check:{atr:'DES', DC:13}, pass:{ go:'emboscadaEvita' }, fail:{ go:'emboscadaLobo' } },
+      { label:'Acender tocha e avançar (CON 12)', check:{atr:'CON', DC:12}, pass:{ go:'salãoCentral' }, fail:{ go:'emboscadaLobo' } },
+    ]
+  },
+  emboscadaEvita: {
+    title:'Sussurros na Escuridão',
+    text:`Selene percebe a sombra antes do salto. Vocês se posicionam melhor.`,
+    onEnter: ()=>{ DB.flags.surpresa=false; },
+    choices:[{ label:'Enfrentar o lobo-escama', go:'combateLobo' }]
+  },
+  emboscadaLobo: {
+    title:'Emboscada!',
+    text:`Um lobo-escama salta das sombras. Vocês estão em desvantagem!`,
+    onEnter: ()=>{ DB.flags.surpresa=true; },
+    choices:[{ label:'Revidar', go:'combateLobo' }]
+  },
+  combateLobo: {
+    title:'Combate — Lobo-Escama',
+    text:`Peles metálicas, olhos famintos. O ar fede a minério e sangue seco.`,
+    onEnter: ()=>{ startCombat({nome:'Lobo-escama', hp:18, AC:13, tipo:'besta'}) },
+    choices:[]
+  },
+  posCombate: {
+    title:'Salão Central da Mina',
+    text:`Entre escombros, encontram Borin preso sob vigas. Ele rosna: "Demoraram!"`,
+    onEnter: ()=>{ DB.rel.borin += 2; },
+    choices:[
+      { label:'Erguer as vigas (FOR 14)', check:{atr:'FOR', DC:14}, pass:{ go:'borinLivre' }, fail:{ go:'forFalha' } },
+      { label:'Usar magia para aliviar peso (INT 12)', check:{atr:'INT', DC:12}, pass:{ go:'borinLivre' }, fail:{ go:'forFalha' } },
+    ]
+  },
+  forFalha: {
+    title:'Peso Brutal',
+    text:`As vigas deslizam e machucam Kael (−3 HP).`,
+    onEnter: ()=>{ DB.actors.kael.hp = Math.max(1, DB.actors.kael.hp-3); },
+    choices:[{ label:'Tentar de novo (CON 12)', check:{atr:'CON', DC:12}, pass:{ go:'borinLivre' }, fail:{ go:'borinIrritado' } }]
+  },
+  borinIrritado: {
+    title:'Borin Ranzinza',
+    text:`"Se morrerem aqui, vou assombrar vocês", rosna o anão.`,
+    onEnter: ()=>{ DB.rel.borin -= 1; },
+    choices:[{ label:'Forçar juntos (FOR 12)', check:{atr:'FOR', DC:12}, pass:{ go:'borinLivre' }, fail:{ go:'borinLivre' } }]
+  },
+  borinLivre: {
+    title:'Ferreiro Resgatado',
+    text:`Borin se levanta, bate a poeira e pega um martelo. "Tô devendo uma. Posso forjar algo quando voltarmos."`,
+    choices:[{ label:'Voltar para a vila', go:'retornoVila' }]
+  },
+  retornoVila: {
+    title:'De Volta à Vila',
+    text:`Lyra corre ao encontro. "Vocês conseguiram!" O patrocínio está garantido — e um jantar também.`,
+    onEnter: ()=>{ DB.rel.lyra += 1; DB.xpTotal += 50; },
+    choices:[
+      { label:'Conversar com Lyra (aumentar relação)', go:'dialogoLyra' },
+      { label:'Negociar com Borin (forja futura)', go:'dialogoBorin' },
+      { label:'Escrever para Elyne', go:'cartaElyne2' },
+    ]
+  },
+  dialogoLyra: {
+    title:'À Luz de Velas',
+    text:`Lyra serve sopa. As mãos tremem levemente quando sorri para vocês.`,
+    onEnter: ()=>{ DB.rel.lyra += 1; },
+    choices:[{ label:'Encerrar (Capítulo 1 concluído)', go:'fimCap1' }]
+  },
+  dialogoBorin: {
+    title:'Negócio Fechado',
+    text:`"Quando subirem de nível, me procurem. Martelos falam."`,
+    onEnter: ()=>{ DB.rel.borin += 1; },
+    choices:[{ label:'Encerrar (Capítulo 1 concluído)', go:'fimCap1' }]
+  },
+  cartaElyne2: {
+    title:'Promessas Renovadas',
+    text:`Elyne responde: "Seja luz onde o mundo é cinza."`,
+    onEnter: ()=>{ DB.rel.elyne += 1; },
+    choices:[{ label:'Encerrar (Capítulo 1 concluído)', go:'fimCap1' }]
+  },
+  fimCap1: {
+    title:'Capítulo 1 — Concluído',
+    text:`Vocês ganham 50 XP. Laços criados, garras afiadas. A estrada chama.`,
+    onEnter: ()=>{ DB.xpTotal += 50; DB.meta.chapter = 2; },
+    choices:[{ label:'Seguir para o Capítulo 2', go:'amanhecerLyra' }]
+  },
+
+  // ===== Capítulo 2 =====
+  amanhecerLyra:{
+    title:'Capítulo 2 — Amanhecer na Vila',
+    text:`Manhã seguinte. O cheiro de pão fresco. Lyra varre a varanda, cabelos rosa ainda úmidos.
+Ela olha de soslaio, um sorriso tímido que tenta esconder preocupação.`,
+    choices:[
+      { label:'Puxar conversa suave (romance) [CAR 12]', check:{atr:'CAR', DC:12}, pass:{ go:'romanceLyra' }, fail:{ go:'romanceFail' } },
+      { label:'Ir direto ao ponto: a mina profunda', go:'forjaBorin' }
+    ]
+  },
+  romanceLyra:{
+    title:'Coração Desarmado',
+    text:`"Ontem eu... fiquei com medo", diz Lyra. "Obrigada por voltar." A mão encosta de leve na tua.
+O mundo fica menos pesado por um instante.`,
+    onEnter: ()=>{ DB.rel.lyra += 2; DB.xpTotal += 10; },
+    choices:[
+      { label:'Prometer proteção (compromisso)', go:'forjaBorin' },
+      { label:'Brincar pra quebrar o clima', go:'forjaBorin' }
+    ]
+  },
+  romanceFail:{
+    title:'Palavras Tortas',
+    text:`Tu tenta, mas sai tudo atravessado. Lyra baixa os olhos. "Vamos focar no trabalho."`,
+    onEnter: ()=>{ DB.rel.lyra -= 1; },
+    choices:[{ label:'Mudar de assunto e procurar Borin', go:'forjaBorin' }]
+  },
+
+  forjaBorin:{
+    title:'Borin — Primeira Forja',
+    text:`Borin coça a barba. "Promessa é dívida. Posso aprontar uma peça rápida pra cada estilo.
+Escolham bem, não dá pra refazer hoje."`,
+    choices:[
+      { label:'Espada da Guilda (+1 FOR Kael)', go:'forjaEspada' },
+      { label:'Arco Afinado (+1 DES Selene)', go:'forjaArco' },
+      { label:'Anel Rúnico (+1 INT Darian)', go:'forjaAnel' }
+    ]
+  },
+  forjaEspada:{
+    title:'Espada da Guilda',
+    text:`Lâmina equilibrada, guarda simples. Kael sente o peso certo na mão.`,
+    onEnter: ()=>{ if(!DB.flags.forged){ DB.actors.kael.FOR+=1; DB.actors.kael.inventario.push({nome:'Espada da Guilda'}); DB.flags.forged=true; DB.rel.borin +=1; } },
+    choices:[{ label:'Seguir viagem à mina profunda', go:'estradaEvento' }]
+  },
+  forjaArco:{
+    title:'Arco Afinado',
+    text:`Madeira flexível, corda nova. Selene testa o som: perfeito.`,
+    onEnter: ()=>{ if(!DB.flags.forged){ DB.actors.selene.DES+=1; DB.actors.selene.inventario.push({nome:'Arco Afinado'}); DB.flags.forged=true; DB.rel.borin +=1; } },
+    choices:[{ label:'Seguir viagem à mina profunda', go:'estradaEvento' }]
+  },
+  forjaAnel:{
+    title:'Anel Rúnico',
+    text:`Metal frio gravado com símbolos. Darian sente a mente clarear.`,
+    onEnter: ()=>{ if(!DB.flags.forged){ DB.actors.darian.INT+=1; DB.actors.darian.inventario.push({nome:'Anel Rúnico'}); DB.flags.forged=true; DB.rel.borin +=1; } },
+    choices:[{ label:'Seguir viagem à mina profunda', go:'estradaEvento' }]
+  },
+
+  estradaEvento:{
+    title:'Estrada de Cascalho',
+    text:`A trilha até a mina profunda corta um bosque ralo. O vento anuncia mudança.`,
+    onEnter: ()=>{
+      // Sorteia evento 0,1,2
+      const r = Math.floor(Math.random()*3);
+      DB.flags.rand = r;
+    },
+    choices:[{ label:'Avançar', go:'eventoSwitch' }]
+  },
+  eventoSwitch:{
+    title:'...',
+    text:`...`,
+    choices:[
+      { label:'(Continuar)', go:'__EVT__' }
+    ]
+  },
+  // place-holders resolvidos via goto manual no script (ver goto override)
+  ladroes:{
+    title:'Emboscada de Ladrões',
+    text:`Dois carreteiros armados surgem do mato. "Bolsa, agora!"`,
+    choices:[
+      { label:'Revidar (FOR 13)', check:{atr:'FOR', DC:13}, pass:{ go:'ladroesVencidos' }, fail:{ go:'ladroesDano' } },
+      { label:'Esquivar e avançar (DES 14)', check:{atr:'DES', DC:14}, pass:{ go:'ladroesEvasao' }, fail:{ go:'ladroesDano' } }
+    ]
+  },
+  ladroesVencidos:{
+    title:'Estrada Limpa',
+    text:`Os bandidos fogem, deixando tralhas.`,
+    onEnter: ()=>{ DB.xpTotal += 20; },
+    choices:[{ label:'Seguir', go:'minaProfundaEntrada' }]
+  },
+  ladroesEvasao:{
+    title:'Sem Perdas',
+    text:`Vocês passam como vento. Nada a declarar.`,
+    onEnter: ()=>{ DB.xpTotal += 10; },
+    choices:[{ label:'Seguir', go:'minaProfundaEntrada' }]
+  },
+  ladroesDano:{
+    title:'Golpe Baixo',
+    text:`Um cutelo pega de raspão. Sangue esquenta a pele.`,
+    onEnter: ()=>{ DB.actors.kael.hp = Math.max(1, DB.actors.kael.hp-3); },
+    choices:[{ label:'Apertar o passo', go:'minaProfundaEntrada' }]
+  },
+
+  viajante:{
+    title:'Viajante Misterioso',
+    text:`Um homem encapuzado oferece um conselho enigmático... por um favor.`,
+    choices:[
+      { label:'Convencer sem pagar (CAR 13)', check:{atr:'CAR', DC:13}, pass:{ go:'viajanteBuff' }, fail:{ go:'viajanteNada' } },
+      { label:'Pedir pista sobre a mina (INT 12)', check:{atr:'INT', DC:12}, pass:{ go:'viajanteBuff' }, fail:{ go:'viajanteNada' } }
+    ]
+  },
+  viajanteBuff:{
+    title:'Palavras que Pesam',
+    text:`"Golpes mágicos quebram ferro melhor que músculo."`,
+    onEnter: ()=>{ DB.flags.tipMiniboss = true; DB.xpTotal += 10; },
+    choices:[{ label:'Seguir', go:'minaProfundaEntrada' }]
+  },
+  viajanteNada:{
+    title:'Silêncio',
+    text:`Ele some no mato. Nada ganho, nada perdido.`,
+    choices:[{ label:'Seguir', go:'minaProfundaEntrada' }]
+  },
+
+  achado:{
+    title:'Relíquia na Lama',
+    text:`Entre raízes, um frasco intacto.`,
+    choices:[
+      { label:'Coletar (CON 10)', check:{atr:'CON', DC:10}, pass:{ go:'achadoItem' }, fail:{ go:'achadoQuebra' } }
+    ]
+  },
+  achadoItem:{
+    title:'Poção Menor',
+    text:`Recupera 4 HP do ator ativo.`,
+    onEnter: ()=>{ const a = DB.actors[DB.meta.active]; a.hp = Math.min(a.maxHp, a.hp+4); a.inventario.push({nome:'Frasco Vazio'}); },
+    choices:[{ label:'Seguir', go:'minaProfundaEntrada' }]
+  },
+  achadoQuebra:{
+    title:'Azar',
+    text:`O frasco espatifa. Cheiro bom, timing péssimo.`,
+    choices:[{ label:'Seguir', go:'minaProfundaEntrada' }]
+  },
+
+  minaProfundaEntrada:{
+    title:'Mina Profunda — Portão de Ferro',
+    text:`Correntes partidas. Marcas de garras na parede. O ar pulsa pesado.`,
+    choices:[
+      { label:'Entrar com cautela (DES 13)', check:{atr:'DES', DC:13}, pass:{ go:'miniboss' }, fail:{ go:'miniboss' } }
+    ]
+  },
+  miniboss:{
+    title:'Mini-Boss — Sombra de Ferro',
+    text:`Uma massa metálica humanoide emerge do breu. Olhos rubros, passos que racham a rocha.`,
+    onEnter: ()=>{
+      startCombat({nome:'Sombra de Ferro', hp:48, AC:15, tipo:'constructo', resFisico:2, resMagico:0, atkBonus:8, dmgMin:5, dmgMax:9});
+    },
+    choices:[]
+  },
+  posMiniboss:{
+    title:'Núcleo Enferrujado',
+    text:`Entre placas quebradas, um núcleo pulsante ainda quente.`,
+    onEnter: ()=>{ if(!DB.flags.dropCore){ DB.flags.dropCore=true; DB.xpTotal += 80; } },
+    choices:[
+      { label:'Equipar no Kael (+1 CON)', go:'coreKael' },
+      { label:'Equipar na Selene (+1 CON)', go:'coreSelene' },
+      { label:'Equipar no Darian (+1 CON)', go:'coreDarian' }
+    ]
+  },
+  coreKael:{ title:'Núcleo Equipado', text:'Kael sente o peito endurecer por dentro.', onEnter: ()=>{ DB.actors.kael.CON+=1; DB.actors.kael.inventario.push({nome:'Núcleo de Ferro'}); }, choices:[{label:'Voltar à vila', go:'fechamentoC2'}]},
+  coreSelene:{ title:'Núcleo Equipado', text:'Selene respira fundo — dor e vigor misturados.', onEnter: ()=>{ DB.actors.selene.CON+=1; DB.actors.selene.inventario.push({nome:'Núcleo de Ferro'}); }, choices:[{label:'Voltar à vila', go:'fechamentoC2'}]},
+  coreDarian:{ title:'Núcleo Equipado', text:'O calor do metal pulsa nos ossos de Darian.', onEnter: ()=>{ DB.actors.darian.CON+=1; DB.actors.darian.inventario.push({nome:'Núcleo de Ferro'}); }, choices:[{label:'Voltar à vila', go:'fechamentoC2'}]},
+
+  fechamentoC2:{
+    title:'Retorno & Consequências',
+    text:`A vila ganha um rumor novo: aventureiros derrotam a Sombra de Ferro. 
+Lyra observa em silêncio, olhos brilhando; Borin mede vocês de cima a baixo.`,
+    onEnter: ()=>{ DB.meta.chapter = 3; },
+    choices:[
+      { label:'Conversar com Lyra (se romance ≥ 2)', go:'checkRomance' },
+      { label:'Planejar próxima missão', go:'placeholderC3' }
+    ]
+  },
+  checkRomance:{
+    title:'Entre Vozes Baixas',
+    text:`"Fica mais um pouco", ela pede. A noite parece espiar pela janela.`,
+    onEnter: ()=>{ if(DB.rel.lyra<2){ /*fallback*/ goto('romanceBloqueado'); } },
+    choices:[{label:'Ficar', go:'placeholderC3'}]
+  },
+  romanceBloqueado:{
+    title:'Distância',
+    text:`Lyra sorri educado. "Descansem. Vocês ganharam."`,
+    choices:[{label:'Planejar próxima missão', go:'placeholderC3'}]
+  },
+  placeholderC3:{ title:'Capítulo 3 — Em breve', text:'Gatilhos prontos. Quer priorizar política da Guilda, monstros-corrompidos na floresta, ou intriga nobre?', choices:[] }
+};
+
+// Máquina de cena + roteador de evento aleatório
+let current = 'prologo';
+function goto(key){
+  // roteia evento aleatório quando necessário
+  if(key==='__EVT__'){
+    if(DB.flags.rand===0) key='ladroes';
+    else if(DB.flags.rand===1) key='viajante';
+    else key='achado';
+  }
+  current = key;
+  const sc = Scenes[key];
+  document.getElementById('sceneTitle').textContent = sc.title;
+  document.getElementById('story').textContent = sc.text;
+  if(sc.onEnter) sc.onEnter();
+  renderChoices();
+  renderChars();
+}
+
+function renderChoices(){
+  const box = document.getElementById('choices');
+  box.innerHTML = '';
+  const sc = Scenes[current];
+  (sc.choices||[]).forEach(ch=>{
+    const btn = document.createElement('button');
+    btn.textContent = ch.label;
+    btn.onclick = ()=>{
+      if(ch.check){
+        const {atr, DC} = ch.check; const res = teste(atr, DC);
+        if(res.ok){
+          log(`Sucesso!`);
+          if(ch.pass && ch.pass.go) goto(ch.pass.go);
+          if(ch.pass && ch.pass.rew){ DB.xpTotal += ch.pass.rew; }
+        } else {
+          log(`Falha.`);
+          if(ch.fail && ch.fail.go) goto(ch.fail.go);
+        }
+      } else if(ch.go){
+        goto(ch.go);
+      }
+    };
+    box.appendChild(btn);
+  });
+}
+
+// Combate com inimigo configurável (inclui resistências e miniboss forte)
+function startCombat(enemy){
+  const surprised = !!DB.flags.surpresa;
+  const party = [DB.actors.kael, DB.actors.selene, DB.actors.darian];
+  let logStr = `Combate iniciado contra ${enemy.nome} (HP ${enemy.hp}).\n`;
+  function turnoAtor(a){
+    const atr = (a.INT >= a.FOR && a.INT >= a.DES) ? 'INT' : (a.DES > a.FOR ? 'DES' : 'FOR');
+    const res = teste(atr, enemy.AC);
+    if(res.ok){
+      const typ = (atr==='INT')?'magico':'fisico';
+      let dd = dano(typ, a);
+      if(typ==='fisico' && enemy.resFisico) dd = Math.max(0, dd - enemy.resFisico);
+      if(typ==='magico' && enemy.resMagico) dd = Math.max(0, dd - enemy.resMagico);
+      enemy.hp -= dd;
+      logStr += `${a.nome} acerta (${typ}) e causa ${dd} de dano. Inimigo HP ${Math.max(0,enemy.hp)}.\n`;
+    } else {
+      logStr += `${a.nome} erra o golpe.\n`;
+    }
+  }
+  function turnoInimigo(){
+    const vivos = party.filter(p=>p.hp>0);
+    const alvo = vivos[Math.floor(Math.random()*vivos.length)];
+    const toHit = (enemy.atkBonus||6);
+    const res = RNG.d20()+toHit;
+    const alvoAC = alvo.CON+10;
+    if(res >= alvoAC){
+      const baseMin = enemy.dmgMin||3, baseMax = enemy.dmgMax||7;
+      const dd = Math.floor(baseMin + Math.random()*(baseMax-baseMin+1));
+      alvo.hp = Math.max(0, alvo.hp - dd);
+      logStr += `${enemy.nome} atinge ${alvo.nome} por ${dd} de dano (HP ${alvo.hp}/${alvo.maxHp}).\n`;
+    } else {
+      logStr += `${enemy.nome} erra o ataque.\n`;
+    }
+  }
+  let rounds = 0;
+  while(enemy.hp>0 && party.some(p=>p.hp>0) && rounds<10){
+    rounds++;
+    if(surprised && rounds===1){ turnoInimigo(); }
+    party.filter(p=>p.hp>0).forEach(turnoAtor);
+    if(enemy.hp>0) turnoInimigo();
+  }
+  document.getElementById('story').textContent += "\n\n"+logStr;
+  if(enemy.hp<=0){
+    DB.xpTotal += 80; log('Vitória! +80 XP');
+    goto('posMiniboss');
+  } else {
+    log('Retirada! Vocês escapam por pouco. +20 XP');
+    DB.xpTotal += 20;
+    goto('posMiniboss');
+  }
+}
+
+// Service worker (PWA)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', ()=> {
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  });
+}
+
+function renderAll(){ renderChars(); goto(current); }
+renderAll();
+</script>
+</body>
+</html>

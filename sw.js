@@ -1,12 +1,14 @@
-self.addEventListener('install', (e)=> {
-  e.waitUntil(caches.open('ccf-rpg-v02').then(cache => cache.addAll([
-    './',
-    './index.html',
-    './manifest.webmanifest',
-    './assets/icon-192.png',
-    './assets/icon-512.png'
-  ])));
+const CACHE = 'ccf-v02';
+const ASSETS = ['.', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
+
+self.addEventListener('install', e => {
+  e.waitUntil(caches.open(CACHE).then(c => c.addAll(ASSETS)));
+  self.skipWaiting();
 });
-self.addEventListener('fetch', (e)=> {
-  e.respondWith(caches.match(e.request).then(resp => resp || fetch(e.request)));
+self.addEventListener('activate', e => {
+  e.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))));
+  self.clients.claim();
+});
+self.addEventListener('fetch', e => {
+  e.respondWith(caches.match(e.request).then(r => r || fetch(e.request)));
 });

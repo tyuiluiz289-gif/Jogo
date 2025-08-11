@@ -1,20 +1,26 @@
 {
+  "id": "/Jogo/",
   "name": "Crônicas de Cinza & Fogo",
   "short_name": "Cinza&Fogo",
-  "start_url": "./index.html",
+  "description": "RPG de texto medieval com rolagens, romance e mini-boss.",
+  "start_url": "./",
+  "scope": "/Jogo/",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#0b1220",
   "theme_color": "#0b1220",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ],
+  "launch_handler": { "client_mode": "navigate-existing" },
+  "screenshots": [
     {
       "src": "icon-512.png",
       "sizes": "512x512",
-      "type": "image/png"
+      "type": "image/png",
+      "form_factor": "wide",
+      "label": "Tela inicial"
     }
   ]
 }
